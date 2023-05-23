@@ -1,0 +1,134 @@
+<form version="1.1">
+  <label>Cyral Log Activity Details</label>
+  <fieldset submitButton="false"></fieldset>
+  <row>
+    <panel id="header_log_detail_view">
+      <html>
+        <style>
+            #header_log_detail_view .panel-body.html {
+                background-color: #004eae;
+            }
+        </style>
+        <center>
+          <h1 style="color:white;">Log Detail View</h1>
+        </center>
+      </html>
+    </panel>
+  </row>
+  <row>
+    <panel>
+      <input type="dropdown" token="logInformationApplication">
+        <label>Application</label>
+        <choice value="*">All</choice>
+        <default>*</default>
+        <initialValue>*</initialValue>
+        <fieldForLabel>client.applicationName</fieldForLabel>
+        <fieldForValue>client.applicationName</fieldForValue>
+        <search>
+          <query>eventtype=CyralLogs client.applicationName="*"
+| dedup client.applicationName
+| table client.applicationName</query>
+          <earliest>$logInformationTime.earliest$</earliest>
+          <latest>$logInformationTime.latest$</latest>
+        </search>
+      </input>
+      <input type="dropdown" token="logInformationGroup">
+        <label>SSO Group</label>
+        <choice value="*">All</choice>
+        <default>*</default>
+        <initialValue>*</initialValue>
+        <fieldForLabel>identity.group</fieldForLabel>
+        <fieldForValue>identity.group</fieldForValue>
+        <search>
+          <query>eventtype=CyralLogs identity.group="*"
+  | dedup identity.group
+  | table identity.group</query>
+          <earliest>$logInformationTime.earliest$</earliest>
+          <latest>$logInformationTime.latest$</latest>
+        </search>
+      </input>
+      <input type="dropdown" token="logInformationUserID">
+        <label>SSO User</label>
+        <choice value="*">All</choice>
+        <default>*</default>
+        <initialValue>*</initialValue>
+        <fieldForLabel>identity.endUser</fieldForLabel>
+        <fieldForValue>identity.endUser</fieldForValue>
+        <search>
+          <query>eventtype=CyralLogs identity.endUser="*"
+  | dedup identity.endUser
+  | table identity.endUser</query>
+          <earliest>$logInformationTime.earliest$</earliest>
+          <latest>$logInformationTime.latest$</latest>
+        </search>
+      </input>
+      <input type="multiselect" token="logInformationCategory" searchWhenChanged="true">
+        <label>Activity Category</label>
+        <choice value="*">All</choice>
+        <default>*</default>
+        <initialValue>*</initialValue>
+        <fieldForLabel>ActivityCategory</fieldForLabel>
+        <fieldForValue>ActivityCategoryShortName</fieldForValue>
+        <search>
+          <query>| inputlookup CategoryLookup | dedup ActivityCategory | table ActivityCategory ActivityCategoryShortName</query>
+          <earliest>-15m</earliest>
+          <latest>now</latest>
+        </search>
+        <delimiter> </delimiter>
+      </input>
+      <input type="multiselect" token="logInformationTerm" searchWhenChanged="true">
+        <label>Activity Category</label>
+        <choice value="*">All</choice>
+        <default>*</default>
+        <initialValue>*</initialValue>
+        <fieldForLabel>ActivityTerm</fieldForLabel>
+        <fieldForValue>ActivityTermShortName</fieldForValue>
+        <search>
+          <query>| inputlookup CategoryLookup | dedup ActivityTerm | table ActivityTerm ActivityTermShortName</query>
+          <earliest>-15m</earliest>
+          <latest>now</latest>
+        </search>
+        <delimiter> </delimiter>
+      </input>
+      <input type="time" token="logInformationTime" searchWhenChanged="true">
+        <label>Timeframe</label>
+        <default>
+          <earliest>-24h@h</earliest>
+          <latest>now</latest>
+        </default>
+      </input>
+      <input type="dropdown" token="logInformationRepo" searchWhenChanged="true">
+        <label>Repository</label>
+        <choice value="*">All</choice>
+        <default>*</default>
+        <initialValue>*</initialValue>
+        <fieldForLabel>repo.name</fieldForLabel>
+        <fieldForValue>repo.name</fieldForValue>
+        <search>
+          <query>eventtype="CyralLogs" 
+| stats count by repo.name</query>
+          <earliest>$logInformationTime.earliest$</earliest>
+          <latest>$logInformationTime.latest$</latest>
+        </search>
+      </input>
+      <table>
+        <search>
+          <query>eventtype="CyralLogs" request.statementType IN (*) identity.endUser="$logInformationUserID$" client.applicationName="$logInformationApplication$" identity.group="$logInformationGroup$" repo.name="$logInformationRepo$"| lookup CategoryLookup StatementType AS request.statementType RepoType as repo.type
+|search ActivityCategoryShortName="$logInformationCategory$" ActivityTermShortName="$logInformationTerm$"
+| rename repo.name as Repository, repo.type as "Repository Type", identity.repoUser as "Repository User", ActivityCategory as "Activity Category", activityTime as "Activity Time", ActivityTerm as "Activity Term", identity.endUser as "SSO User", client.applicationName as "Client Application", identity.group as "SSO Group"  |  table Repository "Repository Type" "Repository User" "SSO User" "SSO Group" "Client Application" "Activity Category" "Activity Term" "Activity Time"</query>
+          <earliest>$logInformationTime.earliest$</earliest>
+          <latest>$logInformationTime.latest$</latest>
+          <sampleRatio>1</sampleRatio>
+        </search>
+        <option name="count">20</option>
+        <option name="dataOverlayMode">none</option>
+        <option name="drilldown">cell</option>
+        <option name="percentagesRow">false</option>
+        <option name="refresh.display">progressbar</option>
+        <option name="rowNumbers">false</option>
+        <option name="totalsRow">false</option>
+        <option name="wrap">true</option>
+      </table>
+    </panel>
+  </row>
+</form>

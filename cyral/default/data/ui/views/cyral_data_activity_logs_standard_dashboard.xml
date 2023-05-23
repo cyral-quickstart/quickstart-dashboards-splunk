@@ -1,0 +1,1012 @@
+<form version="1.1">
+  <label>Data Activity Logs Standard Dashboard v2.0</label>
+  <search id="globalSearch">
+    <query>eventtype="CyralLogs" repo.name="$f_database$" client.applicationName="$f_application$" identity.group="$f_ssoGroup$" identity.endUser="$f_ssoUser$"|fields repo.name identity.repoUser identity.endUser identity.group client.host sidecar.name client.connectionId activityTypes{} response.bytes</query>
+    <earliest>$field1.earliest$</earliest>
+    <latest>$field1.latest$</latest>
+    <sampleRatio>1</sampleRatio>
+  </search>
+  <fieldset submitButton="false">
+    <input type="time" token="field1">
+      <label>Timeframe</label>
+      <default>
+        <earliest>-24h@h</earliest>
+        <latest>now</latest>
+      </default>
+    </input>
+    <input type="dropdown" token="f_database">
+      <label>Repository</label>
+      <choice value="*">All</choice>
+      <default>*</default>
+      <initialValue>*</initialValue>
+      <fieldForLabel>repo.name</fieldForLabel>
+      <fieldForValue>repo.name</fieldForValue>
+      <search>
+        <query>eventtype="CyralLogs" 
+| stats count by repo.name</query>
+        <earliest>$field1.earliest$</earliest>
+        <latest>$field1.latest$</latest>
+      </search>
+    </input>
+    <input type="dropdown" token="f_application">
+      <label>Application</label>
+      <choice value="*">All</choice>
+      <default>*</default>
+      <initialValue>*</initialValue>
+      <fieldForLabel>client.applicationName</fieldForLabel>
+      <fieldForValue>client.applicationName</fieldForValue>
+      <search>
+        <query>eventtype=CyralLogs client.applicationName="*"
+| dedup client.applicationName
+| table client.applicationName</query>
+        <earliest>$field1.earliest$</earliest>
+        <latest>$field1.latest$</latest>
+      </search>
+    </input>
+    <input type="dropdown" token="f_ssoGroup">
+      <label>SSO Group</label>
+      <choice value="*">All</choice>
+      <default>*</default>
+      <initialValue>*</initialValue>
+      <fieldForLabel>identity.group</fieldForLabel>
+      <fieldForValue>identity.group</fieldForValue>
+      <search>
+        <query>eventtype=CyralLogs identity.group="*"
+| dedup identity.group
+| table identity.group</query>
+        <earliest>$field1.earliest$</earliest>
+        <latest>$field1.latest$</latest>
+      </search>
+    </input>
+    <input type="dropdown" token="f_ssoUser">
+      <label>SSO User</label>
+      <choice value="*">All</choice>
+      <default>*</default>
+      <initialValue>*</initialValue>
+      <fieldForLabel>identity.endUser</fieldForLabel>
+      <fieldForValue>identity.endUser</fieldForValue>
+      <search>
+        <query>eventtype=CyralLogs identity.endUser="*"
+| dedup identity.endUser
+| table identity.endUser</query>
+        <earliest>$field1.earliest$</earliest>
+        <latest>$field1.latest$</latest>
+      </search>
+    </input>
+  </fieldset>
+  <row>
+    <panel>
+      <html>Questions about the dashboard?<br>
+      Contact <a href="mailto:support@cyral.com">support@cyral.com</a>
+        </br>
+      </html>
+    </panel>
+  </row>
+  <row>
+    <panel id="header_system_summary">
+      <html>
+        <style>
+            #header_system_summary .panel-body.html {
+                background-color: #004eae;
+            }
+        </style>
+        <center>
+          <h1 style="color:white;">System Summary</h1>
+        </center>
+      </html>
+    </panel>
+  </row>
+  <row>
+    <panel>
+      <title>Number of Repositories</title>
+      <single>
+        <search base="globalSearch">
+          <query>stats distinct_count(repo.name)</query>
+        </search>
+        <option name="colorMode">block</option>
+        <option name="drilldown">none</option>
+        <option name="rangeColors">["0x53a051","0xdc4e41"]</option>
+        <option name="rangeValues">[0]</option>
+        <option name="refresh.display">progressbar</option>
+        <option name="useColors">0</option>
+      </single>
+    </panel>
+    <panel>
+      <title>Number of Sidecars</title>
+      <single>
+        <search base="globalSearch">
+          <query>| stats distinct_count(sidecar.name)</query>
+        </search>
+        <option name="drilldown">none</option>
+        <option name="refresh.display">progressbar</option>
+      </single>
+    </panel>
+    <panel>
+      <title>Number of Registered Repository Accounts</title>
+      <single>
+        <search base="globalSearch">
+          <query>stats distinct_count(identity.repoUser)</query>
+        </search>
+        <option name="drilldown">none</option>
+        <option name="refresh.display">progressbar</option>
+      </single>
+    </panel>
+    <panel>
+      <title>Average Connections Per Timeframe</title>
+      <single>
+        <search base="globalSearch">
+          <query>| timechart count(client.connectionId) as count
+| stats avg(count)</query>
+        </search>
+        <option name="drilldown">none</option>
+        <option name="rangeColors">["0x53a051","0x0877a6","0xf8be34","0xf1813f","0xdc4e41"]</option>
+        <option name="refresh.display">progressbar</option>
+      </single>
+    </panel>
+  </row>
+  <row>
+    <panel>
+      <title>Connection Activity by Geography</title>
+      <!--map>
+        <title>Connection Activity by Geography</title>
+        <search>
+          <query>eventtype="CyralLogs" repo.name IN ($f_database$) client.applicationName IN ($f_application$) identity.group IN ($f_ssoGroup$) identity.endUser IN ($f_ssoUser$)| iplocation client.host
+| stats count by Country| geom geo_countries allFeatures=True featureIdField=Country</query>
+          <earliest>$field1.earliest$</earliest>
+          <latest>$field1.latest$</latest>
+          <sampleRatio>1</sampleRatio>
+        </search>
+        <option name="drilldown">none</option>
+        <option name="mapping.choroplethLayer.colorBins">5</option>
+        <option name="mapping.choroplethLayer.colorMode">auto</option>
+        <option name="mapping.choroplethLayer.maximumColor">0xaf575a</option>
+        <option name="mapping.choroplethLayer.minimumColor">0x62b3b2</option>
+        <option name="mapping.choroplethLayer.neutralPoint">0</option>
+        <option name="mapping.choroplethLayer.shapeOpacity">0.75</option>
+        <option name="mapping.choroplethLayer.showBorder">1</option>
+        <option name="mapping.data.maxClusters">100</option>
+        <option name="mapping.legend.placement">bottomright</option>
+        <option name="mapping.map.center">(0,0)</option>
+        <option name="mapping.map.panning">1</option>
+        <option name="mapping.map.scrollZoom">0</option>
+        <option name="mapping.map.zoom">2</option>
+        <option name="mapping.markerLayer.markerMaxSize">50</option>
+        <option name="mapping.markerLayer.markerMinSize">10</option>
+        <option name="mapping.markerLayer.markerOpacity">0.8</option>
+        <option name="mapping.showTiles">1</option>
+        <option name="mapping.tileLayer.maxZoom">7</option>
+        <option name="mapping.tileLayer.minZoom">0</option>
+        <option name="mapping.tileLayer.tileOpacity">1</option>
+        <option name="mapping.type">choropleth</option>
+        <option name="trellis.enabled">0</option>
+        <option name="trellis.scales.shared">1</option>
+        <option name="trellis.size">medium</option>
+      </map-->
+      <map>
+        <search base="globalSearch">
+          <query>| iplocation client.host
+|  geostats count</query>
+        </search>
+        <option name="drilldown">none</option>
+        <option name="mapping.choroplethLayer.colorBins">5</option>
+        <option name="mapping.choroplethLayer.colorMode">auto</option>
+        <option name="mapping.choroplethLayer.maximumColor">0xaf575a</option>
+        <option name="mapping.choroplethLayer.minimumColor">0x62b3b2</option>
+        <option name="mapping.choroplethLayer.neutralPoint">0</option>
+        <option name="mapping.choroplethLayer.shapeOpacity">0.75</option>
+        <option name="mapping.choroplethLayer.showBorder">1</option>
+        <option name="mapping.data.maxClusters">100</option>
+        <option name="mapping.legend.placement">bottomright</option>
+        <option name="mapping.map.center">(0,0)</option>
+        <option name="mapping.map.panning">1</option>
+        <option name="mapping.map.scrollZoom">0</option>
+        <option name="mapping.map.zoom">2</option>
+        <option name="mapping.markerLayer.markerMaxSize">50</option>
+        <option name="mapping.markerLayer.markerMinSize">10</option>
+        <option name="mapping.markerLayer.markerOpacity">0.8</option>
+        <option name="mapping.showTiles">1</option>
+        <option name="mapping.tileLayer.maxZoom">7</option>
+        <option name="mapping.tileLayer.minZoom">0</option>
+        <option name="mapping.tileLayer.tileOpacity">1</option>
+        <option name="mapping.type">marker</option>
+        <option name="trellis.enabled">0</option>
+        <option name="trellis.scales.shared">1</option>
+        <option name="trellis.size">medium</option>
+      </map>
+    </panel>
+  </row>
+  <row>
+    <panel>
+      <title>Number of Active Users</title>
+      <single>
+        <search base="globalSearch">
+          <query>stats distinct_count(identity.endUser)</query>
+        </search>
+        <option name="colorBy">value</option>
+        <option name="colorMode">none</option>
+        <option name="drilldown">none</option>
+        <option name="numberPrecision">0</option>
+        <option name="rangeColors">["0x53a051", "0x0877a6", "0xf8be34", "0xf1813f", "0xdc4e41"]</option>
+        <option name="rangeValues">[0,30,70,100]</option>
+        <option name="showSparkline">1</option>
+        <option name="showTrendIndicator">1</option>
+        <option name="trellis.enabled">0</option>
+        <option name="trellis.scales.shared">1</option>
+        <option name="trellis.size">medium</option>
+        <option name="trendColorInterpretation">standard</option>
+        <option name="trendDisplayMode">absolute</option>
+        <option name="unitPosition">after</option>
+        <option name="useColors">0</option>
+        <option name="useThousandSeparators">1</option>
+      </single>
+    </panel>
+    <panel>
+      <title>Number of Active SSO Groups</title>
+      <single>
+        <search base="globalSearch">
+          <query>stats distinct_count(identity.group)</query>
+        </search>
+        <option name="colorBy">value</option>
+        <option name="colorMode">none</option>
+        <option name="drilldown">none</option>
+        <option name="numberPrecision">0</option>
+        <option name="rangeColors">["0x53a051", "0x0877a6", "0xf8be34", "0xf1813f", "0xdc4e41"]</option>
+        <option name="rangeValues">[0,30,70,100]</option>
+        <option name="showSparkline">1</option>
+        <option name="showTrendIndicator">1</option>
+        <option name="trellis.enabled">0</option>
+        <option name="trellis.scales.shared">1</option>
+        <option name="trellis.size">medium</option>
+        <option name="trendColorInterpretation">standard</option>
+        <option name="trendDisplayMode">absolute</option>
+        <option name="unitPosition">after</option>
+        <option name="useColors">0</option>
+        <option name="useThousandSeparators">1</option>
+      </single>
+    </panel>
+  </row>
+  <row>
+    <panel>
+      <title>Number of Users in each SSO Group</title>
+      <table>
+        <search base="globalSearch">
+          <query>stats distinct_count(identity.endUser) as Users by identity.group</query>
+        </search>
+        <option name="count">100</option>
+        <option name="dataOverlayMode">none</option>
+        <option name="drilldown">none</option>
+        <option name="percentagesRow">false</option>
+        <option name="rowNumbers">false</option>
+        <option name="totalsRow">false</option>
+        <option name="wrap">true</option>
+      </table>
+    </panel>
+    <panel>
+      <title>Repository Connections by SSO Group</title>
+      <chart>
+        <search base="globalSearch">
+          <query>chart distinct_count(identity.endUser) as Users by repo.name,identity.group</query>
+        </search>
+        <option name="charting.axisLabelsX.majorLabelStyle.overflowMode">ellipsisNone</option>
+        <option name="charting.axisLabelsX.majorLabelStyle.rotation">0</option>
+        <option name="charting.axisTitleX.visibility">visible</option>
+        <option name="charting.axisTitleY.visibility">visible</option>
+        <option name="charting.axisTitleY2.visibility">visible</option>
+        <option name="charting.axisX.abbreviation">none</option>
+        <option name="charting.axisX.scale">linear</option>
+        <option name="charting.axisY.abbreviation">none</option>
+        <option name="charting.axisY.scale">linear</option>
+        <option name="charting.axisY2.abbreviation">none</option>
+        <option name="charting.axisY2.enabled">0</option>
+        <option name="charting.axisY2.scale">inherit</option>
+        <option name="charting.chart">column</option>
+        <option name="charting.chart.bubbleMaximumSize">50</option>
+        <option name="charting.chart.bubbleMinimumSize">10</option>
+        <option name="charting.chart.bubbleSizeBy">area</option>
+        <option name="charting.chart.nullValueMode">gaps</option>
+        <option name="charting.chart.showDataLabels">none</option>
+        <option name="charting.chart.sliceCollapsingThreshold">0.01</option>
+        <option name="charting.chart.stackMode">stacked</option>
+        <option name="charting.chart.style">minimal</option>
+        <option name="charting.drilldown">none</option>
+        <option name="charting.layout.splitSeries">0</option>
+        <option name="charting.layout.splitSeries.allowIndependentYRanges">0</option>
+        <option name="charting.legend.labelStyle.overflowMode">ellipsisMiddle</option>
+        <option name="charting.legend.mode">standard</option>
+        <option name="charting.legend.placement">right</option>
+        <option name="charting.lineWidth">2</option>
+        <option name="refresh.display">progressbar</option>
+        <option name="trellis.enabled">0</option>
+        <option name="trellis.scales.shared">1</option>
+        <option name="trellis.size">medium</option>
+      </chart>
+    </panel>
+  </row>
+  <row>
+    <panel>
+      <title>Access Rules Created</title>
+      <table>
+        <search>
+          <query>eventtype="CyralLogs" action="access-rules.create"
+| stats count by subject.user details.repoName</query>
+          <earliest>-24h@h</earliest>
+          <latest>now</latest>
+          <sampleRatio>1</sampleRatio>
+        </search>
+        <option name="count">100</option>
+        <option name="dataOverlayMode">none</option>
+        <option name="drilldown">none</option>
+        <option name="percentagesRow">false</option>
+        <option name="rowNumbers">false</option>
+        <option name="totalsRow">false</option>
+        <option name="wrap">true</option>
+      </table>
+    </panel>
+  </row>
+  <row>
+    <panel>
+      <title>Just-In-Time Access Approvals by Cyral Administrator</title>
+      <table>
+        <search>
+          <query>eventtype="CyralLogs" action="approval.grant"
+| stats count by subject.user</query>
+          <earliest>$field1.earliest$</earliest>
+          <latest>$field1.latest$</latest>
+          <sampleRatio>1</sampleRatio>
+        </search>
+        <option name="count">100</option>
+        <option name="dataOverlayMode">none</option>
+        <option name="drilldown">none</option>
+        <option name="percentagesRow">false</option>
+        <option name="refresh.display">progressbar</option>
+        <option name="rowNumbers">false</option>
+        <option name="totalsRow">false</option>
+        <option name="wrap">true</option>
+      </table>
+    </panel>
+    <panel>
+      <title>Access Grants by Repository</title>
+      <table>
+        <search>
+          <query>eventtype="CyralLogs" action="approval.grant"
+| stats count by details.repoName</query>
+          <earliest>$field1.earliest$</earliest>
+          <latest>$field1.latest$</latest>
+          <sampleRatio>1</sampleRatio>
+        </search>
+        <option name="count">100</option>
+        <option name="dataOverlayMode">none</option>
+        <option name="drilldown">none</option>
+        <option name="percentagesRow">false</option>
+        <option name="refresh.display">progressbar</option>
+        <option name="rowNumbers">false</option>
+        <option name="totalsRow">false</option>
+        <option name="wrap">true</option>
+      </table>
+    </panel>
+  </row>
+  <row>
+    <panel>
+      <title>Repository Connections</title>
+      <table>
+        <search base="globalSearch">
+          <query>|search activityTypes{} IN (query)|stats distinct_count(client.connectionId) as "Connections" count as "Queries" avg(response.bytes) as "Average Query Size in Bytes" by repo.name
+| rename repo.name as Repository
+| eval "Average Query Size in Bytes"=round('Average Query Size in Bytes', 0)</query>
+        </search>
+        <option name="count">100</option>
+        <option name="dataOverlayMode">none</option>
+        <option name="drilldown">none</option>
+        <option name="percentagesRow">false</option>
+        <option name="rowNumbers">false</option>
+        <option name="totalsRow">false</option>
+        <option name="wrap">true</option>
+      </table>
+    </panel>
+  </row>
+  <row>
+    <panel id="header_data_activity">
+      <html>
+        <style>
+            #header_data_activity .panel-body.html {
+                background-color: #004eae;
+            }
+        </style>
+        <center>
+          <h1 style="color:white;">Data Activity</h1>
+        </center>
+      </html>
+    </panel>
+  </row>
+  <row>
+    <panel>
+      <title>Repository Traffic Across Time (Queries)</title>
+      <chart>
+        <search base="globalSearch">
+          <query>|search activityTypes{} IN (query)|timechart count by repo.name</query>
+        </search>
+        <option name="charting.axisLabelsX.majorLabelStyle.overflowMode">ellipsisNone</option>
+        <option name="charting.axisLabelsX.majorLabelStyle.rotation">0</option>
+        <option name="charting.axisTitleX.visibility">visible</option>
+        <option name="charting.axisTitleY.visibility">visible</option>
+        <option name="charting.axisTitleY2.visibility">visible</option>
+        <option name="charting.axisX.abbreviation">none</option>
+        <option name="charting.axisX.scale">linear</option>
+        <option name="charting.axisY.abbreviation">none</option>
+        <option name="charting.axisY.scale">linear</option>
+        <option name="charting.axisY2.abbreviation">none</option>
+        <option name="charting.axisY2.enabled">0</option>
+        <option name="charting.axisY2.scale">inherit</option>
+        <option name="charting.chart">line</option>
+        <option name="charting.chart.bubbleMaximumSize">50</option>
+        <option name="charting.chart.bubbleMinimumSize">10</option>
+        <option name="charting.chart.bubbleSizeBy">area</option>
+        <option name="charting.chart.nullValueMode">gaps</option>
+        <option name="charting.chart.showDataLabels">none</option>
+        <option name="charting.chart.sliceCollapsingThreshold">0.01</option>
+        <option name="charting.chart.stackMode">default</option>
+        <option name="charting.chart.style">minimal</option>
+        <option name="charting.drilldown">none</option>
+        <option name="charting.layout.splitSeries">0</option>
+        <option name="charting.layout.splitSeries.allowIndependentYRanges">0</option>
+        <option name="charting.legend.labelStyle.overflowMode">ellipsisMiddle</option>
+        <option name="charting.legend.mode">standard</option>
+        <option name="charting.legend.placement">right</option>
+        <option name="charting.lineWidth">2</option>
+        <option name="refresh.display">progressbar</option>
+        <option name="trellis.enabled">0</option>
+        <option name="trellis.scales.shared">1</option>
+        <option name="trellis.size">medium</option>
+      </chart>
+    </panel>
+  </row>
+  <row>
+    <panel>
+      <title>Repository Traffic Across Time (Connections)</title>
+      <chart>
+        <search base="globalSearch">
+          <query>|search activityTypes{} IN (query)|timechart distinct_count(client.connectionId) by repo.name</query>
+        </search>
+        <option name="charting.axisLabelsX.majorLabelStyle.overflowMode">ellipsisNone</option>
+        <option name="charting.axisLabelsX.majorLabelStyle.rotation">0</option>
+        <option name="charting.axisTitleX.visibility">visible</option>
+        <option name="charting.axisTitleY.visibility">visible</option>
+        <option name="charting.axisTitleY2.visibility">visible</option>
+        <option name="charting.axisX.abbreviation">none</option>
+        <option name="charting.axisX.scale">linear</option>
+        <option name="charting.axisY.abbreviation">none</option>
+        <option name="charting.axisY.scale">linear</option>
+        <option name="charting.axisY2.abbreviation">none</option>
+        <option name="charting.axisY2.enabled">0</option>
+        <option name="charting.axisY2.scale">inherit</option>
+        <option name="charting.chart">line</option>
+        <option name="charting.chart.bubbleMaximumSize">50</option>
+        <option name="charting.chart.bubbleMinimumSize">10</option>
+        <option name="charting.chart.bubbleSizeBy">area</option>
+        <option name="charting.chart.nullValueMode">gaps</option>
+        <option name="charting.chart.showDataLabels">none</option>
+        <option name="charting.chart.sliceCollapsingThreshold">0.01</option>
+        <option name="charting.chart.stackMode">default</option>
+        <option name="charting.chart.style">minimal</option>
+        <option name="charting.drilldown">none</option>
+        <option name="charting.layout.splitSeries">0</option>
+        <option name="charting.layout.splitSeries.allowIndependentYRanges">0</option>
+        <option name="charting.legend.labelStyle.overflowMode">ellipsisMiddle</option>
+        <option name="charting.legend.mode">standard</option>
+        <option name="charting.legend.placement">right</option>
+        <option name="charting.lineWidth">2</option>
+        <option name="refresh.display">progressbar</option>
+        <option name="trellis.enabled">0</option>
+        <option name="trellis.scales.shared">1</option>
+        <option name="trellis.size">medium</option>
+      </chart>
+    </panel>
+  </row>
+  <row>
+    <panel>
+      <title>Data Most Frequently Accessed</title>
+      <table>
+        <search>
+          <query>eventtype="CyralLogs" "request.datasetsAccessed{}.dataset"="*" repo.name="$f_database$" client.applicationName="$f_application$" identity.endUser="$f_ssoUser$" identity.group="$f_ssoGroup$"
+| eval executionTimeInMS=('response.executionTimeNanos'/1000000)
+| mvexpand request.datasetsAccessed{}.dataset
+| rename request.datasetsAccessed{}.dataset as dataSet, "identity.endUser" as User, "identity.group" as Group
+| eval Data='repo.name' + "." + dataSet
+| stats count as "Number of Queries" distinct_count(client.connectionId) as "Number of Connections" avg(executionTimeInMS) as "Avg Query Completion Speed" by Data, Group, User
+| eval "Avg Query Completion Speed"=round('Avg Query Completion Speed',0)
+| sort -"Number of Queries"</query>
+          <earliest>$field1.earliest$</earliest>
+          <latest>$field1.latest$</latest>
+          <sampleRatio>1</sampleRatio>
+        </search>
+        <option name="count">10</option>
+        <option name="dataOverlayMode">none</option>
+        <option name="drilldown">cell</option>
+        <option name="percentagesRow">false</option>
+        <option name="refresh.display">progressbar</option>
+        <option name="rowNumbers">false</option>
+        <option name="totalsRow">false</option>
+        <option name="wrap">true</option>
+      </table>
+    </panel>
+    <panel>
+      <title>Data Access Distribution</title>
+      <chart>
+        <search>
+          <query>eventtype="CyralLogs" "request.datasetsAccessed{}.dataset"="*" repo.name="$f_database$" client.applicationName="$f_application$" identity.endUser="$f_ssoUser$" identity.group="$f_ssoGroup$"
+| eval executionTimeInMS=('response.executionTimeNanos'/1000000)
+| mvexpand request.datasetsAccessed{}.dataset
+| rename request.datasetsAccessed{}.dataset as dataSet
+| eval Data='repo.name' + "." + dataSet
+| stats count as "Number of Queries" by Data</query>
+          <earliest>$field1.earliest$</earliest>
+          <latest>$field1.latest$</latest>
+          <sampleRatio>1</sampleRatio>
+        </search>
+        <option name="charting.axisLabelsX.majorLabelStyle.overflowMode">ellipsisNone</option>
+        <option name="charting.axisLabelsX.majorLabelStyle.rotation">0</option>
+        <option name="charting.axisTitleX.visibility">visible</option>
+        <option name="charting.axisTitleY.visibility">visible</option>
+        <option name="charting.axisTitleY2.visibility">visible</option>
+        <option name="charting.axisX.abbreviation">none</option>
+        <option name="charting.axisX.scale">linear</option>
+        <option name="charting.axisY.abbreviation">none</option>
+        <option name="charting.axisY.scale">linear</option>
+        <option name="charting.axisY2.abbreviation">none</option>
+        <option name="charting.axisY2.enabled">0</option>
+        <option name="charting.axisY2.scale">inherit</option>
+        <option name="charting.chart">pie</option>
+        <option name="charting.chart.bubbleMaximumSize">50</option>
+        <option name="charting.chart.bubbleMinimumSize">10</option>
+        <option name="charting.chart.bubbleSizeBy">area</option>
+        <option name="charting.chart.nullValueMode">gaps</option>
+        <option name="charting.chart.showDataLabels">none</option>
+        <option name="charting.chart.sliceCollapsingThreshold">0.01</option>
+        <option name="charting.chart.stackMode">stacked</option>
+        <option name="charting.chart.style">minimal</option>
+        <option name="charting.drilldown">none</option>
+        <option name="charting.layout.splitSeries">0</option>
+        <option name="charting.layout.splitSeries.allowIndependentYRanges">0</option>
+        <option name="charting.legend.labelStyle.overflowMode">ellipsisMiddle</option>
+        <option name="charting.legend.mode">standard</option>
+        <option name="charting.legend.placement">right</option>
+        <option name="charting.lineWidth">2</option>
+        <option name="refresh.display">progressbar</option>
+        <option name="trellis.enabled">0</option>
+        <option name="trellis.scales.shared">1</option>
+        <option name="trellis.size">medium</option>
+      </chart>
+    </panel>
+  </row>
+  <row>
+    <panel>
+      <title>Activity Category by SSO Groups</title>
+      <table>
+        <search>
+          <query>eventtype="CyralLogs" request.statementType IN (*) repo.name="$f_database$" client.applicationName="$f_application$" identity.group="$f_ssoGroup$" identity.endUser="$f_ssoUser$"| lookup CategoryLookup StatementType AS request.statementType RepoType as repo.type|search ActivityCategory IN ("*") | chart count by ActivityCategory identity.group</query>
+          <earliest>$field1.earliest$</earliest>
+          <latest>$field1.latest$</latest>
+          <sampleRatio>1</sampleRatio>
+        </search>
+        <option name="count">100</option>
+        <option name="dataOverlayMode">none</option>
+        <option name="drilldown">cell</option>
+        <option name="percentagesRow">false</option>
+        <option name="rowNumbers">false</option>
+        <option name="totalsRow">false</option>
+        <option name="wrap">true</option>
+      </table>
+    </panel>
+    <panel>
+      <title>Trends in User Activity</title>
+      <chart>
+        <search>
+          <query>eventtype="CyralLogs" request.statementType IN (*) repo.name="$f_database$" identity.group="$f_ssoGroup$" client.applicationName="$f_application$" identity.endUser="$f_ssoUser$"| lookup CategoryLookup StatementType AS request.statementType RepoType as repo.type|search ActivityCategory IN ("*") | timechart count by ActivityCategory</query>
+          <earliest>$field1.earliest$</earliest>
+          <latest>$field1.latest$</latest>
+          <sampleRatio>1</sampleRatio>
+        </search>
+        <option name="charting.axisLabelsX.majorLabelStyle.overflowMode">ellipsisNone</option>
+        <option name="charting.axisLabelsX.majorLabelStyle.rotation">0</option>
+        <option name="charting.axisTitleX.visibility">visible</option>
+        <option name="charting.axisTitleY.visibility">visible</option>
+        <option name="charting.axisTitleY2.visibility">visible</option>
+        <option name="charting.axisX.abbreviation">none</option>
+        <option name="charting.axisX.scale">linear</option>
+        <option name="charting.axisY.abbreviation">none</option>
+        <option name="charting.axisY.scale">linear</option>
+        <option name="charting.axisY2.abbreviation">none</option>
+        <option name="charting.axisY2.enabled">0</option>
+        <option name="charting.axisY2.scale">inherit</option>
+        <option name="charting.chart">line</option>
+        <option name="charting.chart.bubbleMaximumSize">50</option>
+        <option name="charting.chart.bubbleMinimumSize">10</option>
+        <option name="charting.chart.bubbleSizeBy">area</option>
+        <option name="charting.chart.nullValueMode">gaps</option>
+        <option name="charting.chart.showDataLabels">none</option>
+        <option name="charting.chart.sliceCollapsingThreshold">0.01</option>
+        <option name="charting.chart.stackMode">default</option>
+        <option name="charting.chart.style">minimal</option>
+        <option name="charting.drilldown">none</option>
+        <option name="charting.layout.splitSeries">0</option>
+        <option name="charting.layout.splitSeries.allowIndependentYRanges">0</option>
+        <option name="charting.legend.labelStyle.overflowMode">ellipsisMiddle</option>
+        <option name="charting.legend.mode">standard</option>
+        <option name="charting.legend.placement">right</option>
+        <option name="charting.lineWidth">2</option>
+        <option name="refresh.display">progressbar</option>
+        <option name="trellis.enabled">0</option>
+        <option name="trellis.scales.shared">1</option>
+        <option name="trellis.size">medium</option>
+      </chart>
+    </panel>
+  </row>
+  <row>
+    <panel id="header_security_activity">
+      <html>
+        <style>
+            #header_security_activity .panel-body.html {
+                background-color: #004eae;
+            }
+        </style>
+        <center>
+          <h1 style="color:white;">Security Activity</h1>
+        </center>
+      </html>
+    </panel>
+  </row>
+  <row>
+    <panel>
+      <title>Privileged Commands by Users</title>
+      <table>
+        <search>
+          <query>eventtype="CyralLogs" request.statementType IN (*) repo.name="$f_database$" client.applicationName="$f_application$" identity.group="$f_ssoGroup$" identity.endUser="$f_ssoUser$"| lookup CategoryLookup StatementType AS request.statementType RepoType as repo.type|search ActivityCategory IN ("Privileged Commands")| stats distinct_count(identity.endUser) AS "Count of Users" by ActivityTerm</query>
+          <earliest>$field1.earliest$</earliest>
+          <latest>$field1.latest$</latest>
+          <sampleRatio>1</sampleRatio>
+        </search>
+        <option name="count">100</option>
+        <option name="dataOverlayMode">none</option>
+        <option name="drilldown">cell</option>
+        <option name="percentagesRow">false</option>
+        <option name="refresh.display">progressbar</option>
+        <option name="rowNumbers">false</option>
+        <option name="totalsRow">false</option>
+        <option name="wrap">true</option>
+      </table>
+    </panel>
+    <panel>
+      <title>Privileged Commands Trends</title>
+      <chart>
+        <search>
+          <query>eventtype="CyralLogs" request.statementType IN (*) repo.name="$f_database$" client.applicationName="$f_application$" identity.group="$f_ssoGroup$" identity.endUser="$f_ssoUser$"| lookup CategoryLookup StatementType AS request.statementType RepoType as repo.type|search ActivityCategory IN ("Privileged Commands")| chart count by identity.group ActivityTerm</query>
+          <earliest>$field1.earliest$</earliest>
+          <latest>$field1.latest$</latest>
+          <sampleRatio>1</sampleRatio>
+        </search>
+        <option name="charting.axisLabelsX.majorLabelStyle.overflowMode">ellipsisNone</option>
+        <option name="charting.axisLabelsX.majorLabelStyle.rotation">0</option>
+        <option name="charting.axisTitleX.visibility">visible</option>
+        <option name="charting.axisTitleY.visibility">visible</option>
+        <option name="charting.axisTitleY2.visibility">visible</option>
+        <option name="charting.axisX.abbreviation">none</option>
+        <option name="charting.axisX.scale">linear</option>
+        <option name="charting.axisY.abbreviation">none</option>
+        <option name="charting.axisY.scale">linear</option>
+        <option name="charting.axisY2.abbreviation">none</option>
+        <option name="charting.axisY2.enabled">0</option>
+        <option name="charting.axisY2.scale">inherit</option>
+        <option name="charting.chart">column</option>
+        <option name="charting.chart.bubbleMaximumSize">50</option>
+        <option name="charting.chart.bubbleMinimumSize">10</option>
+        <option name="charting.chart.bubbleSizeBy">area</option>
+        <option name="charting.chart.nullValueMode">gaps</option>
+        <option name="charting.chart.showDataLabels">none</option>
+        <option name="charting.chart.sliceCollapsingThreshold">0.01</option>
+        <option name="charting.chart.stackMode">stacked</option>
+        <option name="charting.chart.style">minimal</option>
+        <option name="charting.drilldown">none</option>
+        <option name="charting.layout.splitSeries">0</option>
+        <option name="charting.layout.splitSeries.allowIndependentYRanges">0</option>
+        <option name="charting.legend.labelStyle.overflowMode">ellipsisMiddle</option>
+        <option name="charting.legend.mode">standard</option>
+        <option name="charting.legend.placement">right</option>
+        <option name="charting.lineWidth">2</option>
+        <option name="refresh.display">progressbar</option>
+        <option name="trellis.enabled">0</option>
+        <option name="trellis.scales.shared">1</option>
+        <option name="trellis.size">medium</option>
+      </chart>
+    </panel>
+  </row>
+  <row>
+    <panel>
+      <title>Access Changes by Users</title>
+      <table>
+        <search>
+          <query>eventtype="CyralLogs" request.statementType IN (*) repo.name="$f_database$" client.applicationName="$f_application$" identity.group="$f_ssoGroup$" identity.endUser="$f_ssoUser$"| lookup CategoryLookup StatementType AS request.statementType RepoType as repo.type|search ActivityCategory IN ("Access Changes")| stats distinct_count(identity.endUser) AS "Count of Users" by ActivityTerm</query>
+          <earliest>$field1.earliest$</earliest>
+          <latest>$field1.latest$</latest>
+          <sampleRatio>1</sampleRatio>
+        </search>
+        <option name="count">100</option>
+        <option name="dataOverlayMode">none</option>
+        <option name="drilldown">none</option>
+        <option name="percentagesRow">false</option>
+        <option name="refresh.display">progressbar</option>
+        <option name="rowNumbers">false</option>
+        <option name="totalsRow">false</option>
+        <option name="wrap">true</option>
+      </table>
+    </panel>
+    <panel>
+      <title>Access Changes Trends</title>
+      <chart>
+        <search>
+          <query>eventtype="CyralLogs" request.statementType IN (*) repo.name="$f_database$" client.applicationName="$f_application$" identity.group="$f_ssoGroup$" identity.endUser="$f_ssoUser$"| lookup CategoryLookup StatementType AS request.statementType RepoType as repo.type|search ActivityCategory IN ("Access Changes")| chart count by identity.group ActivityTerm</query>
+          <earliest>$field1.earliest$</earliest>
+          <latest>$field1.latest$</latest>
+          <sampleRatio>1</sampleRatio>
+        </search>
+        <option name="charting.chart">column</option>
+        <option name="charting.drilldown">none</option>
+        <option name="refresh.display">progressbar</option>
+      </chart>
+    </panel>
+  </row>
+  <row>
+    <panel>
+      <title>Suspicious Activity</title>
+      <table>
+        <search>
+          <query>eventtype="CyralLogs" activityTypes{} IN (networkAccessViolation authenticationFailure portscan fullTableScan query authorizationFailure) repo.name="$f_database$"
+| fields activityTypes{} policyViolated repo.name
+| mvexpand activityTypes{} 
+| rename activityTypes{} as activityType
+| eval activityType=IF(searchmatch("activityType=query policyViolated=true"), "Cyral Policy Trigged", activityType)
+| search activityType IN (networkAccessViolation authorizationFailure authenticationFailure portscan fullTableScan "Cyral Policy Trigged")
+| chart count by repo.name, activityType</query>
+          <earliest>$field1.earliest$</earliest>
+          <latest>$field1.latest$</latest>
+          <sampleRatio>1</sampleRatio>
+        </search>
+        <option name="count">100</option>
+        <option name="dataOverlayMode">none</option>
+        <option name="drilldown">cell</option>
+        <option name="percentagesRow">false</option>
+        <option name="refresh.display">progressbar</option>
+        <option name="rowNumbers">false</option>
+        <option name="totalsRow">false</option>
+        <option name="wrap">true</option>
+      </table>
+    </panel>
+    <panel>
+      <title>Suspicious Activity Trends</title>
+      <chart>
+        <search>
+          <query>eventtype="CyralLogs" activityTypes{} IN (networkAccessViolation authorizationFailure authenticationFailure portscan fullTableScan query) repo.name="$f_database$"
+| fields activityTypes{} policyViolated repo.name
+| mvexpand activityTypes{} 
+| rename activityTypes{} as activityType
+| eval activityType=IF(searchmatch("activityType=query policyViolated=true"), "Cyral Policy Trigged", activityType)
+| search activityType IN (networkAccessViolation authorizationFailure authenticationFailure portscan fullTableScan "Cyral Policy Trigged")
+| chart count by repo.name, activityType</query>
+          <earliest>$field1.earliest$</earliest>
+          <latest>$field1.latest$</latest>
+          <sampleRatio>1</sampleRatio>
+        </search>
+        <option name="charting.axisLabelsX.majorLabelStyle.overflowMode">ellipsisNone</option>
+        <option name="charting.axisLabelsX.majorLabelStyle.rotation">0</option>
+        <option name="charting.axisTitleX.visibility">visible</option>
+        <option name="charting.axisTitleY.visibility">visible</option>
+        <option name="charting.axisTitleY2.visibility">visible</option>
+        <option name="charting.axisX.abbreviation">none</option>
+        <option name="charting.axisX.scale">linear</option>
+        <option name="charting.axisY.abbreviation">none</option>
+        <option name="charting.axisY.scale">linear</option>
+        <option name="charting.axisY2.abbreviation">none</option>
+        <option name="charting.axisY2.enabled">0</option>
+        <option name="charting.axisY2.scale">inherit</option>
+        <option name="charting.chart">column</option>
+        <option name="charting.chart.bubbleMaximumSize">50</option>
+        <option name="charting.chart.bubbleMinimumSize">10</option>
+        <option name="charting.chart.bubbleSizeBy">area</option>
+        <option name="charting.chart.nullValueMode">gaps</option>
+        <option name="charting.chart.showDataLabels">none</option>
+        <option name="charting.chart.sliceCollapsingThreshold">0.01</option>
+        <option name="charting.chart.stackMode">stacked</option>
+        <option name="charting.chart.style">minimal</option>
+        <option name="charting.drilldown">none</option>
+        <option name="charting.layout.splitSeries">0</option>
+        <option name="charting.layout.splitSeries.allowIndependentYRanges">0</option>
+        <option name="charting.legend.labelStyle.overflowMode">ellipsisMiddle</option>
+        <option name="charting.legend.mode">standard</option>
+        <option name="charting.legend.placement">right</option>
+        <option name="charting.lineWidth">2</option>
+        <option name="refresh.display">progressbar</option>
+        <option name="trellis.enabled">0</option>
+        <option name="trellis.scales.shared">1</option>
+        <option name="trellis.size">medium</option>
+      </chart>
+    </panel>
+  </row>
+  <row>
+    <panel id="header_repository_performance">
+      <html>
+        <style>
+            #header_repository_performance .panel-body.html {
+                background-color: #004eae;
+            }
+        </style>
+        <center>
+          <h1 style="color:white;">Repository Performance</h1>
+        </center>
+      </html>
+    </panel>
+  </row>
+  <row>
+    <panel>
+      <title>Summary</title>
+      <table>
+        <search>
+          <query>eventtype="CyralLogs" response.executionTimeNanos=* repo.name="$f_database$" client.applicationName="$f_application$" identity.group="$f_ssoGroup$" identity.endUser="$f_ssoUser$"
+| eval executionTimeInMS=('response.executionTimeNanos'/1000000)
+| stats avg(executionTimeInMS) as avg_executionTimeInMS, count, first(activityTimeNanos) as first_timeNS, last(activityTimeNanos) as last_timeNS by repo.name client.connectionId| eval connectionTimeInNS=(first_timeNS-last_timeNS)
+| eval connectionTimeInMS=(connectionTimeInNS/1000000)
+| stats count(client.connectionId) as "Connections Per Period", avg(connectionTimeInMS) as "Average Connection Duration", avg(count) as "Average Queries Per Connection", avg(avg_executionTimeInMS) as "Average Query Completion Speed" by repo.name</query>
+          <earliest>$field1.earliest$</earliest>
+          <latest>$field1.latest$</latest>
+          <sampleRatio>1</sampleRatio>
+        </search>
+        <option name="count">100</option>
+        <option name="dataOverlayMode">none</option>
+        <option name="drilldown">none</option>
+        <option name="percentagesRow">false</option>
+        <option name="rowNumbers">false</option>
+        <option name="totalsRow">false</option>
+        <option name="wrap">true</option>
+        <format type="number" field="Average Query Completion Speed">
+          <option name="unit">ms</option>
+        </format>
+        <format type="number" field="Average Connection Duration">
+          <option name="unit">ms</option>
+        </format>
+      </table>
+    </panel>
+  </row>
+  <row>
+    <panel>
+      <title>Query Error Rates By Repository</title>
+      <table>
+        <search>
+          <query>eventtype="CyralLogs" request.statement="*" repo.name="$f_database$" client.applicationName="$f_application$" identity.group="$f_ssoGroup$" identity.endUser="$f_ssoUser$"
+| eval errorCount=if('response.isError'=="true", 1, 0)
+| stats count(request.statement) AS "Total Queries Over Timeframe", sum(errorCount) AS "Count of response with errors" by repo.name
+| eval "% of total queries that generate errors"=round(('Count of response with errors'/'Total Queries Over Timeframe')*100, 2)</query>
+          <earliest>$field1.earliest$</earliest>
+          <latest>$field1.latest$</latest>
+          <sampleRatio>1</sampleRatio>
+        </search>
+        <option name="count">10</option>
+        <option name="dataOverlayMode">none</option>
+        <option name="drilldown">none</option>
+        <option name="percentagesRow">false</option>
+        <option name="rowNumbers">false</option>
+        <option name="totalsRow">false</option>
+        <option name="wrap">true</option>
+        <format type="color" field="% of total queries that generate errors">
+          <colorPalette type="list">[#53A051,#F8BE34,#DC4E41]</colorPalette>
+          <scale type="threshold">2,4</scale>
+        </format>
+        <format type="number" field="% of total queries that generate errors">
+          <option name="unit">%</option>
+        </format>
+      </table>
+    </panel>
+    <panel>
+      <title>Trend of Errors over Time</title>
+      <chart>
+        <search>
+          <query>eventtype="CyralLogs" request.statement="*" response.isError="true" repo.name="$f_database$" client.applicationName="$f_application$" identity.group="$f_ssoGroup$" identity.endUser="$f_ssoUser$"
+| eval errorCount=if('response.isError'=="true", 1, 0)
+| timechart sum(errorCount) by repo.name usenull=f</query>
+          <earliest>$field1.earliest$</earliest>
+          <latest>$field1.latest$</latest>
+          <sampleRatio>1</sampleRatio>
+        </search>
+        <option name="charting.axisLabelsX.majorLabelStyle.overflowMode">ellipsisNone</option>
+        <option name="charting.axisLabelsX.majorLabelStyle.rotation">0</option>
+        <option name="charting.axisTitleX.visibility">visible</option>
+        <option name="charting.axisTitleY.visibility">visible</option>
+        <option name="charting.axisTitleY2.visibility">visible</option>
+        <option name="charting.axisX.abbreviation">none</option>
+        <option name="charting.axisX.scale">linear</option>
+        <option name="charting.axisY.abbreviation">none</option>
+        <option name="charting.axisY.scale">linear</option>
+        <option name="charting.axisY2.abbreviation">none</option>
+        <option name="charting.axisY2.enabled">0</option>
+        <option name="charting.axisY2.scale">inherit</option>
+        <option name="charting.chart">line</option>
+        <option name="charting.chart.bubbleMaximumSize">50</option>
+        <option name="charting.chart.bubbleMinimumSize">10</option>
+        <option name="charting.chart.bubbleSizeBy">area</option>
+        <option name="charting.chart.nullValueMode">gaps</option>
+        <option name="charting.chart.rangeValues">[0,2,4,6]</option>
+        <option name="charting.chart.showDataLabels">none</option>
+        <option name="charting.chart.sliceCollapsingThreshold">0.01</option>
+        <option name="charting.chart.stackMode">stacked</option>
+        <option name="charting.chart.style">minimal</option>
+        <option name="charting.drilldown">all</option>
+        <option name="charting.gaugeColors">["0x53a051","0xf8be34","0xdc4e41"]</option>
+        <option name="charting.layout.splitSeries">0</option>
+        <option name="charting.layout.splitSeries.allowIndependentYRanges">0</option>
+        <option name="charting.legend.labelStyle.overflowMode">ellipsisMiddle</option>
+        <option name="charting.legend.mode">standard</option>
+        <option name="charting.legend.placement">right</option>
+        <option name="charting.lineWidth">2</option>
+        <option name="refresh.display">progressbar</option>
+        <option name="trellis.enabled">0</option>
+        <option name="trellis.scales.shared">1</option>
+        <option name="trellis.size">medium</option>
+      </chart>
+    </panel>
+  </row>
+  <row>
+    <panel>
+      <title>Activity Categories With Highest Error Rates</title>
+      <table>
+        <search>
+          <query>eventtype="CyralLogs" request.statementType="*" repo.name="$f_database$" client.applicationName="$f_application$" identity.group="$f_ssoGroup$" identity.endUser="$f_ssoUser$"
+| eval errorCount=if('response.isError'=="true", 1, 0)
+| lookup CategoryLookup StatementType AS request.statementType RepoType as repo.type
+| stats count AS "Total Queries Over Timeframe", sum(errorCount) AS "Count of response with errors" by ActivityCategory
+| eval "% of total queries that generate errors"=round(('Count of response with errors'/'Total Queries Over Timeframe')*100, 2)
+| sort -"% of total queries that generate errors"</query>
+          <earliest>$field1.earliest$</earliest>
+          <latest>$field1.latest$</latest>
+          <sampleRatio>1</sampleRatio>
+        </search>
+        <option name="count">100</option>
+        <option name="dataOverlayMode">none</option>
+        <option name="drilldown">none</option>
+        <option name="percentagesRow">false</option>
+        <option name="rowNumbers">false</option>
+        <option name="totalsRow">false</option>
+        <option name="wrap">true</option>
+        <format type="color" field="% of total queries that generate errors">
+          <colorPalette type="list">[#53A051,#F8BE34,#DC4E41]</colorPalette>
+          <scale type="threshold">2,4</scale>
+        </format>
+        <format type="number" field="% of total queries that generate errors">
+          <option name="unit">%</option>
+        </format>
+      </table>
+    </panel>
+  </row>
+  <row>
+    <panel>
+      <title>Slowest Queries</title>
+      <table>
+        <search>
+          <query>eventtype="CyralLogs" request.statementType IN (*) repo.name="$f_database$" client.applicationName="$f_application$" identity.group="$f_ssoGroup$" identity.endUser="$f_ssoUser$" response.executionTimeNanos="*"|fields request.statementType repo.name repo.type identity.repoUser activityTime identity.endUser client.applicationName response.bytes response.executionTimeNanos request.fieldsAccessed{}.field
+|lookup CategoryLookup StatementType AS request.statementType RepoType as repo.type
+|search ActivityCategoryShortName IN (*)
+| eval "Query Completion Time"=tostring(round(('response.executionTimeNanos'/1000000),0))+"ms"
+| eval "Data Table / Field"=IF(isnull('request.fieldsAccessed{}.field'), "Unknown", 'request.fieldsAccessed{}.field')
+| rename repo.name as Repository, repo.type as "Repository Type", identity.repoUser as "Repository User", ActivityCategory as "Activity Category", activityTime as "Activity Time", ActivityTerm as "Activity Term", identity.endUser as "SSO User", client.applicationName as "Client Application", response.bytes as "Size of transaction" |  table "Data Table / Field" "Repository User" "SSO User" "Client Application" "Activity Term" Repository "Repository Type" "Query Completion Time" "Size of transaction" "Activity Time"
+| sort -"Query Completion Time"</query>
+          <earliest>$field1.earliest$</earliest>
+          <latest>$field1.latest$</latest>
+          <sampleRatio>1</sampleRatio>
+        </search>
+        <option name="count">10</option>
+        <option name="dataOverlayMode">none</option>
+        <option name="drilldown">none</option>
+        <option name="percentagesRow">false</option>
+        <option name="rowNumbers">false</option>
+        <option name="totalsRow">false</option>
+        <option name="wrap">true</option>
+      </table>
+    </panel>
+  </row>
+</form>
