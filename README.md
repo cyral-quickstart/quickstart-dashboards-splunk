@@ -1,14 +1,15 @@
-# Quickstart Sidecar Template
+# Cyral Splunk App
 
-## Repo Naming 
+This app can also be found on [Splunkbase](https://splunkbase.splunk.com/app/5727). If you would like to customize the app for your own purposes, you can make changes to the cyral-x-x-x.tgz file in this repo.
 
-All sidecar templates repos should start with `quickstart-sidecar` and then have the platform name and technology used to deploy it. 
+# Installation
 
-## Setup Steps
+You can either choose to install the app from [Splunkbase](https://splunkbase.splunk.com/app/5727) or using the [TGZ File](cyral-2.0.0.tgz) provided in this repo.
 
-1) create new repo from this template repo
-2) update `README-TEMPLATE.md` 
-3) Remove this readme, and rename   `README-TEMPLATE.md` to `README.md`
-4) Set the About of the repo (this is the descript displayed in [https://cyral-quickstart.github.io](https://cyral-quickstart.github.io/))
-5) Run and then remove the setup.sh script TODO: add script, mostly what we do for the cyralinc repo's
-6) Set permissions repo TODO: provide details
+## Post Installation
+
+The dashboards within this Splunk App make use of a [Splunk Event Type](https://docs.splunk.com/Documentation/Splunk/latest/Knowledge/Abouteventtypes) called `CyralLogs`. This Event Type is created as part of the app install. You will need to edit the `CyralLogs` Event Type and change its search criteria to match the location of Cyral logs within your own Splunk instance.
+
+# Customizations
+
+The Cyral example dashboards are located within the `cyral/default/data/ui/views/` path in the provide [TGZ File](cyral-2.0.0.tgz). You are welcome to customize these files or create your own to repackage the app. You can also create new dashboards once the app is installed.
